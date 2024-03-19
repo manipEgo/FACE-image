@@ -1,7 +1,7 @@
 import os
 import json
 import numpy as np
-from typing import List
+from PIL import Image
 
 def load_folder_information(path: str) -> dict:
     '''
@@ -46,7 +46,8 @@ def load_image(path: str) -> np.array:
     --------
         `np.array`, the image
     '''
-    return np.load(path)
+    img = Image.open(path)
+    return np.array(img)
 
 def image_MSE(origin: np.array, generated: np.array, mask: np.array) -> float:
     '''
