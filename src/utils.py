@@ -65,7 +65,7 @@ def image_MSE(origin: np.array, generated: np.array, mask: np.array) -> float:
     '''
     diff = origin - generated
     diff = np.multiply(diff, mask)
-    return np.mean(np.square(diff))
+    return np.sum(np.square(diff)) / np.sum(mask, dtype=float)
 
 def sequence_spectrum(sequence: np.array) -> np.array:
     '''
