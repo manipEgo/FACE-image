@@ -32,6 +32,7 @@ def load_folder_information(path: str) -> dict:
     for item in required_items:
         if item not in info:
             raise ValueError(f"{item} is not present in {file_path}")
+    return info
 
 def load_image(path: str) -> np.array:
     '''
