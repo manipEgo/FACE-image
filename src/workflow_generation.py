@@ -120,6 +120,7 @@ def main(args: argparse.Namespace):
         {
             "id": id_cnt,
             "type": "CheckpointLoaderSimple",
+            "pos": [0, 0],
             "outputs": [
                 {"name": "MODEL", "type": "MODEL", "links": [], "slot_index": 0},
                 {"name": "CLIP", "type": "CLIP", "links": [], "slot_index": 1},
@@ -133,6 +134,7 @@ def main(args: argparse.Namespace):
         {
             "id": id_cnt,
             "type": "CLIPTextEncode",
+            "pos": [400, 0],
             "inputs": [{"name": "clip", "type": "CLIP", "link": None}],
             "outputs": [
                 {
@@ -149,6 +151,7 @@ def main(args: argparse.Namespace):
         {
             "id": id_cnt,
             "type": "CLIPTextEncode",
+            "pos": [400, 200],
             "inputs": [{"name": "clip", "type": "CLIP", "link": None}],
             "outputs": [
                 {
@@ -168,6 +171,7 @@ def main(args: argparse.Namespace):
             {
                 "id": id_cnt,
                 "type": "LoadImage",
+                "pos": [1000, 700 * i],
                 "outputs": [
                     {"name": "IMAGE", "type": "IMAGE", "links": [], "slot_index": 0},
                     {"name": "MASK", "type": "MASK", "links": [], "slot_index": 1},
@@ -181,6 +185,7 @@ def main(args: argparse.Namespace):
             {
                 "id": id_cnt,
                 "type": "ImageScale",
+                "pos": [1000, 700 * i + 350],
                 "inputs": [{"name": "image", "type": "IMAGE", "link": None}],
                 "outputs": [
                     {"name": "IMAGE", "type": "IMAGE", "links": [], "slot_index": 0}
@@ -198,6 +203,7 @@ def main(args: argparse.Namespace):
                     {
                         "id": id_cnt,
                         "type": "workflow/mask",
+                        "pos": [1000 + 400 * (j + 1), 700 * i],
                         "inputs": [
                             {"name": "pixels", "type": "IMAGE", "link": None},
                             {"name": "vae", "type": "VAE", "link": None},
