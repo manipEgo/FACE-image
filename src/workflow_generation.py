@@ -320,7 +320,7 @@ def main(args: argparse.Namespace):
 
         # Mask In-paints
         for j in range(args.mask_cnt):
-            # Mask: 7 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j
+            # Mask: 8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j
             nodes.append(
                 {
                     "id": id_cnt,
@@ -360,7 +360,7 @@ def main(args: argparse.Namespace):
     # to id
     # to slot
 
-    ## Checkpoint Loader -> CLIP Encoder
+    ## Estimator Checkpoint Loader -> CLIP Encoder
     links = []
     link_cnt = 0
     nodes[0]["outputs"][1]["links"].append(link_cnt)
@@ -371,32 +371,56 @@ def main(args: argparse.Namespace):
     nodes[2]["inputs"][0].update({"link": link_cnt})
     links.append([link_cnt, nodes[0]["id"], 1, nodes[2]["id"], 0])
     link_cnt += 1
+    nodes[0]["outputs"][1]["links"].append(link_cnt)
+    nodes[4 + (2 + args.mask_cnt) * args.image_cnt]["inputs"][0].update({"link": link_cnt})
+    links.append([link_cnt, nodes[0]["id"], 1, nodes[4 + (2 + args.mask_cnt) * args.image_cnt]["id"], 0])
+    link_cnt += 1
+    nodes[0]["outputs"][1]["links"].append(link_cnt)
+    nodes[5 + (2 + args.mask_cnt) * args.image_cnt]["inputs"][0].update({"link": link_cnt})
+    links.append([link_cnt, nodes[0]["id"], 1, nodes[5 + (2 + args.mask_cnt) * args.image_cnt]["id"], 0])
+    link_cnt += 1
 
-    ## Image Loader -> Image Scaler
     for i in range(args.image_cnt):
+        ## Image Loader -> Image Scaler
         nodes[3 + (2 + args.mask_cnt) * i]["outputs"][0]["links"].append(link_cnt)
         nodes[4 + (2 + args.mask_cnt) * i]["inputs"][0].update({"link": link_cnt})
         links.append([link_cnt, nodes[3 + (2 + args.mask_cnt) * i]["id"], 0, nodes[4 + (2 + args.mask_cnt) * i]["id"], 0])
         link_cnt += 1
+        nodes[6 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i]["outputs"][0]["links"].append(link_cnt)
+        nodes[7 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i]["inputs"][0].update({"link": link_cnt})
+        links.append([link_cnt, nodes[6 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i]["id"], 0, nodes[7 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i]["id"], 0])
+        link_cnt += 1
 
         for j in range(args.mask_cnt):
-            ## Checkpoint -> Mask-KSampler
+            ## Estimator Checkpoint -> Mask-KSampler
             nodes[0]["outputs"][0]["links"].append(link_cnt)
             nodes[5 + (2 + args.mask_cnt) * i + j]["inputs"][2].update({"link": link_cnt})
             links.append([link_cnt, nodes[0]["id"], 0, nodes[5 + (2 + args.mask_cnt) * i + j]["id"], 2])
             link_cnt += 1
-            ## Checkpoint -> Mask-VAE Encoder
+            nodes[0]["outputs"][0]["links"].append(link_cnt)
+            nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["inputs"][2].update({"link": link_cnt})
+            links.append([link_cnt, nodes[0]["id"], 0, nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["id"], 2])
+            link_cnt += 1
+            ## Estimator Checkpoint -> Mask-VAE Encoder
             nodes[0]["outputs"][2]["links"].append(link_cnt)
             nodes[5 + (2 + args.mask_cnt) * i + j]["inputs"][1].update({"link": link_cnt})
             links.append([link_cnt, nodes[0]["id"], 2, nodes[5 + (2 + args.mask_cnt) * i + j]["id"], 1])
             link_cnt += 1
-            ## Checkpoint -> Mask-VAE Decoder
+            nodes[0]["outputs"][2]["links"].append(link_cnt)
+            nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["inputs"][1].update({"link": link_cnt})
+            links.append([link_cnt, nodes[0]["id"], 2, nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["id"], 1])
+            link_cnt += 1
+            ## Estimator Checkpoint -> Mask-VAE Decoder
             nodes[0]["outputs"][2]["links"].append(link_cnt)
             nodes[5 + (2 + args.mask_cnt) * i + j]["inputs"][5].update({"link": link_cnt})
             links.append([link_cnt, nodes[0]["id"], 2, nodes[5 + (2 + args.mask_cnt) * i + j]["id"], 5])
             link_cnt += 1
+            nodes[0]["outputs"][2]["links"].append(link_cnt)
+            nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["inputs"][5].update({"link": link_cnt})
+            links.append([link_cnt, nodes[0]["id"], 2, nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["id"], 5])
+            link_cnt += 1
 
-            ## CLIP Encoder -> Mask-KSampler
+            ## Estimator CLIP Encoder -> Mask-KSampler
             nodes[1]["outputs"][0]["links"].append(link_cnt)
             nodes[5 + (2 + args.mask_cnt) * i + j]["inputs"][3].update({"link": link_cnt})
             links.append([link_cnt, nodes[1]["id"], 0, nodes[5 + (2 + args.mask_cnt) * i + j]["id"], 3])
@@ -405,11 +429,23 @@ def main(args: argparse.Namespace):
             nodes[5 + (2 + args.mask_cnt) * i + j]["inputs"][4].update({"link": link_cnt})
             links.append([link_cnt, nodes[2]["id"], 0, nodes[5 + (2 + args.mask_cnt) * i + j]["id"], 4])
             link_cnt += 1
+            nodes[1]["outputs"][0]["links"].append(link_cnt)
+            nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["inputs"][3].update({"link": link_cnt})
+            links.append([link_cnt, nodes[1]["id"], 0, nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["id"], 3])
+            link_cnt += 1
+            nodes[2]["outputs"][0]["links"].append(link_cnt)
+            nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["inputs"][4].update({"link": link_cnt})
+            links.append([link_cnt, nodes[2]["id"], 0, nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["id"], 4])
+            link_cnt += 1
 
             ## Image Scaler -> Mask-VAE Encoder
             nodes[4 + (2 + args.mask_cnt) * i]["outputs"][0]["links"].append(link_cnt)
             nodes[5 + (2 + args.mask_cnt) * i + j]["inputs"][0].update({"link": link_cnt})
             links.append([link_cnt, nodes[4 + (2 + args.mask_cnt) * i]["id"], 0, nodes[5 + (2 + args.mask_cnt) * i + j]["id"], 0])
+            link_cnt += 1
+            nodes[7 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i]["outputs"][0]["links"].append(link_cnt)
+            nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["inputs"][0].update({"link": link_cnt})
+            links.append([link_cnt, nodes[7 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i]["id"], 0, nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["id"], 0])
             link_cnt += 1
 
     # dump the workflow
