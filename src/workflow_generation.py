@@ -107,6 +107,12 @@ def parse_args() -> argparse.Namespace:
         default=True,
         help="Whether to group nodes or not",
     )
+    parser.add_argument(
+        "--steps",
+        type=int,
+        default=64,
+        help="KSampler steps",
+    )
     return parser.parse_args()
 
 
@@ -220,7 +226,7 @@ def main(args: argparse.Namespace):
                             0,
                             0,
                             "randomize",
-                            64,
+                            args.steps,
                             0,
                             "euler",
                             "normal",
@@ -274,7 +280,7 @@ def main(args: argparse.Namespace):
                         "outputs": [
                             {"name": "LATENT", "type": "LATENT", "links": [], "slot_index": 0}
                         ],
-                        "widgets_values": [0, "randomize", 64, 0, "euler", "normal", 1],
+                        "widgets_values": [0, "randomize", args.steps, 0, "euler", "normal", 1],
                     }
                 )
                 id_cnt += 1
