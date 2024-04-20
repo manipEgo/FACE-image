@@ -2,7 +2,7 @@ import argparse
 import json
 
 GROUP_NODES = {
-    "mask": {
+    "MaskInpaint": {
         "nodes": [
             {
                 "type": "LoadImageMask",
@@ -65,8 +65,139 @@ GROUP_NODES = {
             [None, 2, 3, 1, 4, "VAE"],
             [3, 0, 4, 0, 21, "IMAGE"],
         ],
-        "external": [],
-    }
+    },
+    "Image2Image": {
+        "nodes": [
+            {
+                "type": "ComfyUIClipInterrogator",
+                "inputs": [{"name": "image", "type": "IMAGE", "link": None}],
+                "outputs": [
+                    {
+                        "name": "prompt",
+                        "type": "STRING",
+                        "links": [],
+                        "slot_index": 0,
+                    }
+                ],
+                "index": 0,
+            },
+            {
+                "type": "ComfyUIClipInterrogator",
+                "inputs": [{"name": "image", "type": "IMAGE", "link": None}],
+                "outputs": [
+                    {
+                        "name": "prompt",
+                        "type": "STRING",
+                        "links": [],
+                        "slot_index": 0,
+                    }
+                ],
+                "index": 1,
+            },
+            {
+                "type": "EmptyLatentImage",
+                "outputs": [
+                    {
+                        "name": "LATENT",
+                        "type": "LATENT",
+                        "links": [],
+                        "slot_index": 0,
+                    }
+                ],
+                "index": 2,
+            },
+            {
+                "type": "CLIPTextEncode",
+                "inputs": [
+                    {"name": "clip", "type": "CLIP", "link": None},
+                    {
+                        "name": "text",
+                        "type": "STRING",
+                        "link": None,
+                        "widget": {"name": "text"},
+                    },
+                ],
+                "outputs": [
+                    {
+                        "name": "CONDITIONING",
+                        "type": "CONDITIONING",
+                        "links": [],
+                        "slot_index": 0,
+                    }
+                ],
+                "index": 3,
+            },
+            {
+                "type": "CLIPTextEncode",
+                "inputs": [
+                    {"name": "clip", "type": "CLIP", "link": None},
+                    {
+                        "name": "text",
+                        "type": "STRING",
+                        "link": None,
+                        "widget": {"name": "text"},
+                    },
+                ],
+                "outputs": [
+                    {
+                        "name": "CONDITIONING",
+                        "type": "CONDITIONING",
+                        "links": [],
+                        "slot_index": 0,
+                    }
+                ],
+                "index": 4,
+            },
+            {
+                "type": "KSampler",
+                "inputs": [
+                    {"name": "model", "type": "MODEL", "link": None},
+                    {"name": "positive", "type": "CONDITIONING", "link": None},
+                    {"name": "negative", "type": "CONDITIONING", "link": None},
+                    {"name": "latent_image", "type": "LATENT", "link": None},
+                ],
+                "outputs": [
+                    {
+                        "name": "LATENT",
+                        "type": "LATENT",
+                        "links": [],
+                        "slot_index": 0,
+                    }
+                ],
+                "index": 5,
+            },
+            {
+                "type": "VAEDecode",
+                "inputs": [
+                    {"name": "samples", "type": "LATENT", "link": None},
+                    {"name": "vae", "type": "VAE", "link": None},
+                ],
+                "outputs": [
+                    {
+                        "name": "IMAGE",
+                        "type": "IMAGE",
+                        "links": [],
+                        "slot_index": 0,
+                    }
+                ],
+                "index": 6,
+            },
+            {
+                "type": "SaveImage",
+                "inputs": [{"name": "images", "type": "IMAGE", "link": None}],
+                "index": 7,
+            },
+        ],
+        "links": [
+            [0, 0, 3, 1, 26, "STRING"],
+            [1, 0, 4, 1, 28, "STRING"],
+            [3, 0, 5, 1, 27, "CONDITIONING"],
+            [4, 0, 5, 2, 29, "CONDITIONING"],
+            [2, 0, 5, 3, 31, "LATENT"],
+            [5, 0, 6, 0, 32, "LATENT"],
+            [6, 0, 7, 0, 33, "IMAGE"],
+        ],
+    },
 }
 
 def parse_args() -> argparse.Namespace:
@@ -106,6 +237,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=64,
         help="KSampler steps",
+    )
+    parser.add_argument(
+        "--cfg",
+        type=float,
+        default=8.0,
+        help="KSampler cfg",
     )
     return parser.parse_args()
 
@@ -203,7 +340,7 @@ def main(args: argparse.Namespace):
             nodes.append(
                 {
                     "id": id_cnt,
-                    "type": "workflow/mask",
+                    "type": "workflow/MaskInpaint",
                     "pos": [1000 + 400 * (j + 1), 700 * i],
                     "inputs": [
                         {"name": "pixels", "type": "IMAGE", "link": None},
@@ -247,72 +384,44 @@ def main(args: argparse.Namespace):
         }
     )
     id_cnt += 1
-    # Subject CLIP Encoder: 4, 5 + (2 + args.mask_cnt) * args.image_cnt
-    nodes.append(
-        {
-            "id": id_cnt,
-            "type": "CLIPTextEncode",
-            "pos": [400, 200 + 700 * args.image_cnt],
-            "inputs": [{"name": "clip", "type": "CLIP", "link": None}],
-            "outputs": [
-                {
-                    "name": "CONDITIONING",
-                    "type": "CONDITIONING",
-                    "links": [],
-                    "slot_index": 0,
-                }
-            ],
-        }
-    )
-    id_cnt += 1
-    nodes.append(
-        {
-            "id": id_cnt,
-            "type": "CLIPTextEncode",
-            "pos": [400, 400 + 700 * args.image_cnt],
-            "inputs": [{"name": "clip", "type": "CLIP", "link": None}],
-            "outputs": [
-                {
-                    "name": "CONDITIONING",
-                    "type": "CONDITIONING",
-                    "links": [],
-                    "slot_index": 0,
-                }
-            ],
-        }
-    )
-    id_cnt += 1
 
     for i in range(args.image_cnt):
-        # Image Loader: 6 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i
+        # Subject Image2Image: 4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i
         nodes.append(
             {
                 "id": id_cnt,
-                "type": "LoadImage",
+                "type": "workflow/Image2Image",
                 "pos": [1000, 200 + 700 * (args.image_cnt + i)],
-                "outputs": [
-                    {"name": "IMAGE", "type": "IMAGE", "links": [], "slot_index": 0},
-                    {"name": "MASK", "type": "MASK", "links": [], "slot_index": 1},
+                "inputs": [
+                    {"name": "image", "type": "IMAGE", "link": None},
+                    {
+                        "name": "ComfyUIClipInterrogator image",
+                        "type": "IMAGE",
+                        "link": None,
+                    },
+                    {"name": "clip", "type": "CLIP", "link": None},
+                    {"name": "CLIPTextEncode clip", "type": "CLIP", "link": None},
+                    {"name": "model", "type": "MODEL", "link": None},
+                    {"name": "vae", "type": "VAE", "link": None},
                 ],
-            }
-            # TODO: image name
-        )
-        id_cnt += 1
-        # Image Scaler: 7 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i
-        nodes.append(
-            {
-                "id": id_cnt,
-                "type": "ImageScale",
-                "pos": [1000, 550 + 700 * (args.image_cnt + i)],
-                "inputs": [{"name": "image", "type": "IMAGE", "link": None}],
-                "outputs": [
-                    {"name": "IMAGE", "type": "IMAGE", "links": [], "slot_index": 0}
-                ],
+                "outputs": [{"name": "IMAGE", "type": "IMAGE", "links": []}],
+                "title": f"Image-{i} Repaint",
                 "widgets_values": [
-                    args.upscale_method,
+                    "best",
+                    "ViT-L-14/openai",
+                    "negative",
+                    "ViT-L-14/openai",
                     args.upscale_width,
                     args.upscale_height,
-                    "center",
+                    1,
+                    0,
+                    "randomize",
+                    args.steps,
+                    args.cfg,
+                    "euler",
+                    "normal",
+                    1,
+                    f"subject-{i}",
                 ],
             }
         )
@@ -320,11 +429,11 @@ def main(args: argparse.Namespace):
 
         # Mask In-paints
         for j in range(args.mask_cnt):
-            # Mask: 8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j
+            # Mask: 5 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i + j
             nodes.append(
                 {
                     "id": id_cnt,
-                    "type": "workflow/mask",
+                    "type": "workflow/MaskInpaint",
                     "pos": [1000 + 400 * (j + 1), 200 + 700 * (args.image_cnt + i)],
                     "inputs": [
                         {"name": "pixels", "type": "IMAGE", "link": None},
@@ -371,14 +480,6 @@ def main(args: argparse.Namespace):
     nodes[2]["inputs"][0].update({"link": link_cnt})
     links.append([link_cnt, nodes[0]["id"], 1, nodes[2]["id"], 0])
     link_cnt += 1
-    nodes[0]["outputs"][1]["links"].append(link_cnt)
-    nodes[4 + (2 + args.mask_cnt) * args.image_cnt]["inputs"][0].update({"link": link_cnt})
-    links.append([link_cnt, nodes[0]["id"], 1, nodes[4 + (2 + args.mask_cnt) * args.image_cnt]["id"], 0])
-    link_cnt += 1
-    nodes[0]["outputs"][1]["links"].append(link_cnt)
-    nodes[5 + (2 + args.mask_cnt) * args.image_cnt]["inputs"][0].update({"link": link_cnt})
-    links.append([link_cnt, nodes[0]["id"], 1, nodes[5 + (2 + args.mask_cnt) * args.image_cnt]["id"], 0])
-    link_cnt += 1
 
     for i in range(args.image_cnt):
         ## Image Loader -> Image Scaler
@@ -386,9 +487,31 @@ def main(args: argparse.Namespace):
         nodes[4 + (2 + args.mask_cnt) * i]["inputs"][0].update({"link": link_cnt})
         links.append([link_cnt, nodes[3 + (2 + args.mask_cnt) * i]["id"], 0, nodes[4 + (2 + args.mask_cnt) * i]["id"], 0])
         link_cnt += 1
-        nodes[6 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i]["outputs"][0]["links"].append(link_cnt)
-        nodes[7 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i]["inputs"][0].update({"link": link_cnt})
-        links.append([link_cnt, nodes[6 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i]["id"], 0, nodes[7 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i]["id"], 0])
+        ## Image Scaler -> Image2Image
+        nodes[4 + (2 + args.mask_cnt) * i]["outputs"][0]["links"].append(link_cnt)
+        nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["inputs"][0].update({"link": link_cnt})
+        links.append([link_cnt, nodes[4 + (2 + args.mask_cnt) * i]["id"], 0, nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["id"], 0])
+        link_cnt += 1
+        nodes[4 + (2 + args.mask_cnt) * i]["outputs"][0]["links"].append(link_cnt)
+        nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["inputs"][1].update({"link": link_cnt})
+        links.append([link_cnt, nodes[4 + (2 + args.mask_cnt) * i]["id"], 0, nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["id"], 1])
+        link_cnt += 1
+        ## Subject Checkpoint Loader -> Image2Image
+        nodes[3 + (2 + args.mask_cnt) * args.image_cnt]["outputs"][0]["links"].append(link_cnt)
+        nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["inputs"][4].update({"link": link_cnt})
+        links.append([link_cnt, nodes[3 + (2 + args.mask_cnt) * args.image_cnt]["id"], 0, nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["id"], 4])
+        link_cnt += 1
+        nodes[3 + (2 + args.mask_cnt) * args.image_cnt]["outputs"][1]["links"].append(link_cnt)
+        nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["inputs"][2].update({"link": link_cnt})
+        links.append([link_cnt, nodes[3 + (2 + args.mask_cnt) * args.image_cnt]["id"], 1, nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["id"], 2])
+        link_cnt += 1
+        nodes[3 + (2 + args.mask_cnt) * args.image_cnt]["outputs"][1]["links"].append(link_cnt)
+        nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["inputs"][3].update({"link": link_cnt})
+        links.append([link_cnt, nodes[3 + (2 + args.mask_cnt) * args.image_cnt]["id"], 1, nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["id"], 3])
+        link_cnt += 1
+        nodes[3 + (2 + args.mask_cnt) * args.image_cnt]["outputs"][2]["links"].append(link_cnt)
+        nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["inputs"][5].update({"link": link_cnt})
+        links.append([link_cnt, nodes[3 + (2 + args.mask_cnt) * args.image_cnt]["id"], 2, nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["id"], 5])
         link_cnt += 1
 
         for j in range(args.mask_cnt):
@@ -398,17 +521,17 @@ def main(args: argparse.Namespace):
             links.append([link_cnt, nodes[0]["id"], 0, nodes[5 + (2 + args.mask_cnt) * i + j]["id"], 2])
             link_cnt += 1
             nodes[0]["outputs"][0]["links"].append(link_cnt)
-            nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["inputs"][2].update({"link": link_cnt})
-            links.append([link_cnt, nodes[0]["id"], 0, nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["id"], 2])
+            nodes[5 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i + j]["inputs"][2].update({"link": link_cnt})
+            links.append([link_cnt, nodes[0]["id"], 0, nodes[5 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i + j]["id"], 2])
             link_cnt += 1
-            ## Estimator Checkpoint -> Mask-VAE Encoder
+            # Estimator Checkpoint -> Mask-VAE Encoder
             nodes[0]["outputs"][2]["links"].append(link_cnt)
             nodes[5 + (2 + args.mask_cnt) * i + j]["inputs"][1].update({"link": link_cnt})
             links.append([link_cnt, nodes[0]["id"], 2, nodes[5 + (2 + args.mask_cnt) * i + j]["id"], 1])
             link_cnt += 1
             nodes[0]["outputs"][2]["links"].append(link_cnt)
-            nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["inputs"][1].update({"link": link_cnt})
-            links.append([link_cnt, nodes[0]["id"], 2, nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["id"], 1])
+            nodes[5 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i + j]["inputs"][1].update({"link": link_cnt})
+            links.append([link_cnt, nodes[0]["id"], 2, nodes[5 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i + j]["id"], 1])
             link_cnt += 1
             ## Estimator Checkpoint -> Mask-VAE Decoder
             nodes[0]["outputs"][2]["links"].append(link_cnt)
@@ -416,8 +539,8 @@ def main(args: argparse.Namespace):
             links.append([link_cnt, nodes[0]["id"], 2, nodes[5 + (2 + args.mask_cnt) * i + j]["id"], 5])
             link_cnt += 1
             nodes[0]["outputs"][2]["links"].append(link_cnt)
-            nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["inputs"][5].update({"link": link_cnt})
-            links.append([link_cnt, nodes[0]["id"], 2, nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["id"], 5])
+            nodes[5 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i + j]["inputs"][5].update({"link": link_cnt})
+            links.append([link_cnt, nodes[0]["id"], 2, nodes[5 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i + j]["id"], 5])
             link_cnt += 1
 
             ## Estimator CLIP Encoder -> Mask-KSampler
@@ -430,12 +553,12 @@ def main(args: argparse.Namespace):
             links.append([link_cnt, nodes[2]["id"], 0, nodes[5 + (2 + args.mask_cnt) * i + j]["id"], 4])
             link_cnt += 1
             nodes[1]["outputs"][0]["links"].append(link_cnt)
-            nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["inputs"][3].update({"link": link_cnt})
-            links.append([link_cnt, nodes[1]["id"], 0, nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["id"], 3])
+            nodes[5 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i + j]["inputs"][3].update({"link": link_cnt})
+            links.append([link_cnt, nodes[1]["id"], 0, nodes[5 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i + j]["id"], 3])
             link_cnt += 1
             nodes[2]["outputs"][0]["links"].append(link_cnt)
-            nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["inputs"][4].update({"link": link_cnt})
-            links.append([link_cnt, nodes[2]["id"], 0, nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["id"], 4])
+            nodes[5 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i + j]["inputs"][4].update({"link": link_cnt})
+            links.append([link_cnt, nodes[2]["id"], 0, nodes[5 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i + j]["id"], 4])
             link_cnt += 1
 
             ## Image Scaler -> Mask-VAE Encoder
@@ -443,9 +566,11 @@ def main(args: argparse.Namespace):
             nodes[5 + (2 + args.mask_cnt) * i + j]["inputs"][0].update({"link": link_cnt})
             links.append([link_cnt, nodes[4 + (2 + args.mask_cnt) * i]["id"], 0, nodes[5 + (2 + args.mask_cnt) * i + j]["id"], 0])
             link_cnt += 1
-            nodes[7 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i]["outputs"][0]["links"].append(link_cnt)
-            nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["inputs"][0].update({"link": link_cnt})
-            links.append([link_cnt, nodes[7 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i]["id"], 0, nodes[8 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j]["id"], 0])
+
+            ## Image2Image ->  Mask-VAE Encoder
+            nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["outputs"][0]["links"].append(link_cnt)
+            nodes[5 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i + j]["inputs"][0].update({"link": link_cnt})
+            links.append([link_cnt, nodes[4 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i]["id"], 0, nodes[5 + (2 + args.mask_cnt) * args.image_cnt + (1 + args.mask_cnt) * i + j]["id"], 0])
             link_cnt += 1
 
     # dump the workflow
