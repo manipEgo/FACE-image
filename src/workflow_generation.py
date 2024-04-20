@@ -168,7 +168,7 @@ def main(args: argparse.Namespace):
     id_cnt += 1
 
     for i in range(args.image_cnt):
-        # Image Loader: 3 + (2 + args.mask_cnt) * i / 3 + (2 + 5 * args.mask_cnt) * i
+        # Image Loader: 3 + (2 + args.mask_cnt) * i
         nodes.append(
             {
                 "id": id_cnt,
@@ -182,7 +182,7 @@ def main(args: argparse.Namespace):
             # TODO: image name
         )
         id_cnt += 1
-        # Image Scaler: 4 + (2 + args.mask_cnt) * i / 4 + (2 + 5 * args.mask_cnt) * i
+        # Image Scaler: 4 + (2 + args.mask_cnt) * i
         nodes.append(
             {
                 "id": id_cnt,
@@ -205,6 +205,127 @@ def main(args: argparse.Namespace):
                     "id": id_cnt,
                     "type": "workflow/mask",
                     "pos": [1000 + 400 * (j + 1), 700 * i],
+                    "inputs": [
+                        {"name": "pixels", "type": "IMAGE", "link": None},
+                        {"name": "vae", "type": "VAE", "link": None},
+                        {"name": "model", "type": "MODEL", "link": None},
+                        {"name": "positive", "type": "CONDITIONING", "link": None},
+                        {"name": "negative", "type": "CONDITIONING", "link": None},
+                        {"name": "VAEDecode vae", "type": "VAE", "link": None},
+                    ],
+                    "title": f"Image-{i} Mask-{j}",
+                    "widgets_values": [
+                        f"mask_{j}.png",
+                        "alpha",
+                        "image",
+                        0,
+                        0,
+                        "randomize",
+                        args.steps,
+                        0,
+                        "euler",
+                        "normal",
+                        1,
+                        f"image-{i}_mask-{j}",
+                    ],
+                }
+            )
+            id_cnt += 1
+
+    # Machine images
+    # Subject Checkpoint Loader: 3 + (2 + args.mask_cnt) * args.image_cnt
+    nodes.append(
+        {
+            "id": id_cnt,
+            "type": "CheckpointLoaderSimple",
+            "pos": [0, 200 + 700 * args.image_cnt],
+            "outputs": [
+                {"name": "MODEL", "type": "MODEL", "links": [], "slot_index": 0},
+                {"name": "CLIP", "type": "CLIP", "links": [], "slot_index": 1},
+                {"name": "VAE", "type": "VAE", "links": [], "slot_index": 2},
+            ],
+        }
+    )
+    id_cnt += 1
+    # Subject CLIP Encoder: 4, 5 + (2 + args.mask_cnt) * args.image_cnt
+    nodes.append(
+        {
+            "id": id_cnt,
+            "type": "CLIPTextEncode",
+            "pos": [400, 200 + 700 * args.image_cnt],
+            "inputs": [{"name": "clip", "type": "CLIP", "link": None}],
+            "outputs": [
+                {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": [],
+                    "slot_index": 0,
+                }
+            ],
+        }
+    )
+    id_cnt += 1
+    nodes.append(
+        {
+            "id": id_cnt,
+            "type": "CLIPTextEncode",
+            "pos": [400, 400 + 700 * args.image_cnt],
+            "inputs": [{"name": "clip", "type": "CLIP", "link": None}],
+            "outputs": [
+                {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": [],
+                    "slot_index": 0,
+                }
+            ],
+        }
+    )
+    id_cnt += 1
+
+    for i in range(args.image_cnt):
+        # Image Loader: 6 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i
+        nodes.append(
+            {
+                "id": id_cnt,
+                "type": "LoadImage",
+                "pos": [1000, 200 + 700 * (args.image_cnt + i)],
+                "outputs": [
+                    {"name": "IMAGE", "type": "IMAGE", "links": [], "slot_index": 0},
+                    {"name": "MASK", "type": "MASK", "links": [], "slot_index": 1},
+                ],
+            }
+            # TODO: image name
+        )
+        id_cnt += 1
+        # Image Scaler: 7 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i
+        nodes.append(
+            {
+                "id": id_cnt,
+                "type": "ImageScale",
+                "pos": [1000, 550 + 700 * (args.image_cnt + i)],
+                "inputs": [{"name": "image", "type": "IMAGE", "link": None}],
+                "outputs": [
+                    {"name": "IMAGE", "type": "IMAGE", "links": [], "slot_index": 0}
+                ],
+                "widgets_values": [
+                    args.upscale_method,
+                    args.upscale_width,
+                    args.upscale_height,
+                    "center",
+                ],
+            }
+        )
+        id_cnt += 1
+
+        # Mask In-paints
+        for j in range(args.mask_cnt):
+            # Mask: 7 + (2 + args.mask_cnt) * args.image_cnt + (2 + args.mask_cnt) * i + j
+            nodes.append(
+                {
+                    "id": id_cnt,
+                    "type": "workflow/mask",
+                    "pos": [1000 + 400 * (j + 1), 200 + 700 * (args.image_cnt + i)],
                     "inputs": [
                         {"name": "pixels", "type": "IMAGE", "link": None},
                         {"name": "vae", "type": "VAE", "link": None},
