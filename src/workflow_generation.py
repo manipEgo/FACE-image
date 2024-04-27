@@ -1,5 +1,6 @@
 import argparse
 import json
+import png
 
 GROUP_NODES = {
     "MaskInpaint": {
@@ -322,8 +323,8 @@ def main(args: argparse.Namespace):
                     {"name": "IMAGE", "type": "IMAGE", "links": [], "slot_index": 0},
                     {"name": "MASK", "type": "MASK", "links": [], "slot_index": 1},
                 ],
+                "widgets_values": [f"image-{i}"],
             }
-            # TODO: image name
         )
         id_cnt += 1
         # Image Scaler: 4 + (2 + args.mask_cnt) * i
@@ -605,6 +606,21 @@ def main(args: argparse.Namespace):
     workflow.update({"links": links})
     workflow.update({"extra": {"groupNodes": GROUP_NODES}})
     json.dump(workflow, open("workflow.json", "w"), indent=4)
+
+    # generate png masks
+    width = args.upscale_width
+    height = args.upscale_height
+    mask = []
+    for i in range(height):
+        row = []
+        for j in range(width):
+            row.extend([0, 0, 0, 0])
+        mask.append(row)
+    for i in range(args.mask_cnt - 1):
+        for column in range(i * width // args.mask_cnt, (i + 1) * width // args.mask_cnt):
+            for row in range(height):
+                mask[row][column*4 + 3] = 255
+        png.from_array(mask, "RGBA").save(f"./img/masks/mask_{i}.png")
 
 
 if __name__ == "__main__":
