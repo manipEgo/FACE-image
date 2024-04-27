@@ -252,6 +252,18 @@ def parse_args() -> argparse.Namespace:
         default=8.0,
         help="KSampler cfg",
     )
+    parser.add_argument(
+        "--clip",
+        type=str,
+        default="ViT-L-14/openai",
+        help="CLIP model for interrogation",
+    )
+    parser.add_argument(
+        "--img_suffix",
+        type=str,
+        default="png",
+        help="Image load suffix",
+    )
     return parser.parse_args()
 
 
@@ -323,7 +335,7 @@ def main(args: argparse.Namespace):
                     {"name": "IMAGE", "type": "IMAGE", "links": [], "slot_index": 0},
                     {"name": "MASK", "type": "MASK", "links": [], "slot_index": 1},
                 ],
-                "widgets_values": [f"image-{i}"],
+                "widgets_values": [f"image-{i}.{args.img_suffix}"],
             }
         )
         id_cnt += 1
@@ -418,9 +430,9 @@ def main(args: argparse.Namespace):
                 "title": f"Image-{i} Repaint",
                 "widgets_values": [
                     "best",
-                    "ViT-L-14/openai",
+                    args.clip,
                     "negative",
-                    "ViT-L-14/openai",
+                    args.clip,
                     args.upscale_width,
                     args.upscale_height,
                     1,
