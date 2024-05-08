@@ -489,7 +489,7 @@ def main(args: argparse.Namespace):
                         "euler",
                         "normal",
                         1,
-                        f"image-{i}_mask-{j}",
+                        f"subject-{i}_mask-{j}",
                     ],
                 }
             )
