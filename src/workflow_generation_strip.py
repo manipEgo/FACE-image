@@ -217,6 +217,12 @@ def parse_args() -> argparse.Namespace:
         help="Number of images to be loaded",
     )
     parser.add_argument(
+        "--starting_number",
+        type=int,
+        default=0,
+        help="Starting image number",
+    )
+    parser.add_argument(
         "--mask_cnt",
         type=int,
         default=8,
@@ -341,7 +347,7 @@ def main(args: argparse.Namespace):
                     {"name": "IMAGE", "type": "IMAGE", "links": [], "slot_index": 0},
                     {"name": "MASK", "type": "MASK", "links": [], "slot_index": 1},
                 ],
-                "widgets_values": [f"image-{i}.{args.img_suffix}"],
+                "widgets_values": [f"image-{i+args.starting_number}.{args.img_suffix}"],
             }
         )
         id_cnt += 1
