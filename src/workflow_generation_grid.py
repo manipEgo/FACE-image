@@ -74,8 +74,25 @@ def main(args: argparse.Namespace):
             nodes.append(
                 {
                     "id": id_cnt,
+                    "type": "StringFunction|pysssss",
+                    "pos": [970 + 400 * j * 2, 700 * i],
+                    "inputs": [
+                        {"name": "text_a", "type": "STRING", "link": None, "widget": {"name": "text_a"}}
+                    ],
+                    "outputs": [
+                        {"name": "STRING", "type": "STRING", "links": None, "slot_index": 0}
+                    ],
+                    "widgets_values": [
+                        "append", "yes", "", "", ""
+                    ]
+                }
+            )
+            id_cnt += 1
+            nodes.append(
+                {
+                    "id": id_cnt,
                     "type": "workflow/MaskInpaint",
-                    "pos": [1000 + 400 * (j + 1), 700 * i],
+                    "pos": [1000 + 400 * (j * 2 + 1), 700 * i],
                     "inputs": [
                         {"name": "pixels", "type": "IMAGE", "link": None},
                         {"name": "vae", "type": "VAE", "link": None},
