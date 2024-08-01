@@ -13,7 +13,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--grid_side",
         type=int,
-        default=2,
+        default=8,
         help="Number of grid on one side",
     )
 
@@ -120,7 +120,7 @@ def main(args: argparse.Namespace):
                         {"name": "STRING", "type": "STRING", "links": [], "slot_index": 0}
                     ],
                     "widgets_values": [
-                        "append", "yes", "", "", ""
+                        "append", "yes", "", f"_mask-{i*args.grid_side+j}", ""
                     ]
                 }
             )
