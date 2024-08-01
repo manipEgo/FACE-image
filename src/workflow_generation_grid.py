@@ -30,6 +30,7 @@ def main(args: argparse.Namespace):
     nodes = []
     id_cnt = 0
 
+    # === Nodes ===
     # Estimator Checkpoint Loader: 0
     nodes.append(
         {
@@ -44,16 +45,52 @@ def main(args: argparse.Namespace):
         }
     )
     id_cnt += 1
+    # Estimator CLIP Encoder: 1, 2
+    nodes.append(
+        {
+            "id": id_cnt,
+            "type": "CLIPTextEncode",
+            "pos": [400, 0],
+            "inputs": [{"name": "clip", "type": "CLIP", "link": None}],
+            "outputs": [
+                {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": [],
+                    "slot_index": 0,
+                }
+            ],
+        }
+    )
+    id_cnt += 1
+    nodes.append(
+        {
+            "id": id_cnt,
+            "type": "CLIPTextEncode",
+            "pos": [400, 250],
+            "inputs": [{"name": "clip", "type": "CLIP", "link": None}],
+            "outputs": [
+                {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": [],
+                    "slot_index": 0,
+                }
+            ],
+        }
+    )
+    id_cnt += 1
 
+    # Batch Image Loader: 3
     nodes.append(
         {
             "id": id_cnt,
             "type": "Load Image Batch",
-            "pos": [400, 0],
+            "pos": [400, 500],
             "outputs": [
-                {"name": "image", "type": "IMAGE", "links": None, "slot_index": 0},
+                {"name": "image", "type": "IMAGE", "links": [], "slot_index": 0},
                 {"name": "filename_text", "type": "STRING",
-                "links": None, "slot_index": 1}
+                "links": [], "slot_index": 1}
             ],
             "widgets_values": [
                 "incremental_image",
@@ -68,9 +105,9 @@ def main(args: argparse.Namespace):
     )
     id_cnt += 1
 
-    # Masked In-paint
     for i in range(args.grid_side):
         for j in range(args.grid_side):
+            # Filename String Function: 4 + i * grid_side * 2 + j * 2
             nodes.append(
                 {
                     "id": id_cnt,
@@ -80,7 +117,7 @@ def main(args: argparse.Namespace):
                         {"name": "text_a", "type": "STRING", "link": None, "widget": {"name": "text_a"}}
                     ],
                     "outputs": [
-                        {"name": "STRING", "type": "STRING", "links": None, "slot_index": 0}
+                        {"name": "STRING", "type": "STRING", "links": [], "slot_index": 0}
                     ],
                     "widgets_values": [
                         "append", "yes", "", "", ""
@@ -88,6 +125,7 @@ def main(args: argparse.Namespace):
                 }
             )
             id_cnt += 1
+            # Masked In-paint: 5 + i * grid_side * 2 + j * 2
             nodes.append(
                 {
                     "id": id_cnt,
@@ -121,11 +159,72 @@ def main(args: argparse.Namespace):
             )
             id_cnt += 1
 
+    # === Links ===
+    # link id
+    # from id
+    # from slot
+    # to id
+    # to slot
+    links = []
+    link_cnt = 0
+
+    ## Estimator Checkpoint Loader -> CLIP Encoder
+    nodes[0]["outputs"][1]["links"].append(link_cnt)
+    nodes[1]["inputs"][0].update({"link": link_cnt})
+    links.append([link_cnt, nodes[0]["id"], 1, nodes[1]["id"], 0])
+    link_cnt += 1
+    nodes[0]["outputs"][1]["links"].append(link_cnt)
+    nodes[2]["inputs"][0].update({"link": link_cnt})
+    links.append([link_cnt, nodes[0]["id"], 1, nodes[2]["id"], 0])
+    link_cnt += 1
+
+    for i in range(args.grid_side):
+        for j in range(args.grid_side):
+            ## String Function -> Masked In-paint
+            nodes[4 + i * args.grid_side * 2 + j * 2]["outputs"][0]["links"].append(link_cnt)
+            nodes[5 + i * args.grid_side * 2 + j * 2]["inputs"][6].update({"link": link_cnt})
+            links.append([link_cnt, nodes[4 + i * args.grid_side * 2 + j * 2]["id"], 0, nodes[5 + i * args.grid_side * 2 + j * 2]["id"], 6])
+            link_cnt += 1
+            ## Checkpoint Model -> Masked In-paint
+            nodes[0]["outputs"][0]["links"].append(link_cnt)
+            nodes[5 + i * args.grid_side * 2 + j * 2]["inputs"][2].update({"link": link_cnt})
+            links.append([link_cnt, nodes[0]["id"], 0, nodes[5 + i * args.grid_side * 2 + j * 2]["id"], 2])
+            link_cnt += 1
+            ## Checkpoint VAE -> Masked In-paint
+            nodes[0]["outputs"][2]["links"].append(link_cnt)
+            nodes[5 + i * args.grid_side * 2 + j * 2]["inputs"][1].update({"link": link_cnt})
+            links.append([link_cnt, nodes[0]["id"], 2, nodes[5 + i * args.grid_side * 2 + j * 2]["id"], 1])
+            link_cnt += 1
+            nodes[0]["outputs"][2]["links"].append(link_cnt)
+            nodes[5 + i * args.grid_side * 2 + j * 2]["inputs"][5].update({"link": link_cnt})
+            links.append([link_cnt, nodes[0]["id"], 2, nodes[5 + i * args.grid_side * 2 + j * 2]["id"], 5])
+            link_cnt += 1
+            ## CLIP -> Masked In-paint
+            nodes[1]["outputs"][0]["links"].append(link_cnt)
+            nodes[5 + i * args.grid_side * 2 + j * 2]["inputs"][3].update({"link": link_cnt})
+            links.append([link_cnt, nodes[1]["id"], 0, nodes[5 + i * args.grid_side * 2 + j * 2]["id"], 3])
+            link_cnt += 1
+            nodes[2]["outputs"][0]["links"].append(link_cnt)
+            nodes[5 + i * args.grid_side * 2 + j * 2]["inputs"][4].update({"link": link_cnt})
+            links.append([link_cnt, nodes[2]["id"], 0, nodes[5 + i * args.grid_side * 2 + j * 2]["id"], 4])
+            link_cnt += 1
+            ## Batch Image Loader -> Masked In-paint
+            nodes[3]["outputs"][0]["links"].append(link_cnt)
+            nodes[5 + i * args.grid_side * 2 + j * 2]["inputs"][0].update({"link": link_cnt})
+            links.append([link_cnt, nodes[3]["id"], 0, nodes[5 + i * args.grid_side * 2 + j * 2]["id"], 0])
+            link_cnt += 1
+            ## Batch Image Loader -> String Function
+            nodes[3]["outputs"][1]["links"].append(link_cnt)
+            nodes[4 + i * args.grid_side * 2 + j * 2]["inputs"][0].update({"link": link_cnt})
+            links.append([link_cnt, nodes[3]["id"], 1, nodes[4 + i * args.grid_side * 2 + j * 2]["id"], 0])
+            link_cnt += 1
+
+
     # dump the workflow
     workflow.update({"last_node_id": id_cnt})
-    # workflow.update({"last_link_id": link_cnt})
+    workflow.update({"last_link_id": link_cnt})
     workflow.update({"nodes": nodes})
-    # workflow.update({"links": links})
+    workflow.update({"links": links})
     workflow.update({"extra": {"groupNodes": GROUP_NODES}})
     json.dump(workflow, open("workflow.json", "w"), indent=4)
 
