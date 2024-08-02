@@ -1,5 +1,6 @@
 import argparse
 import json
+import png
 from group_nodes import GROUP_NODES
 
 def parse_args() -> argparse.Namespace:
@@ -13,7 +14,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--grid_side",
         type=int,
-        default=8,
+        default=16,
         help="Number of grid on one side",
     )
     parser.add_argument(
@@ -258,6 +259,22 @@ def main(args: argparse.Namespace):
     workflow.update({"links": links})
     workflow.update({"extra": {"groupNodes": GROUP_NODES}})
     json.dump(workflow, open("workflow.json", "w"), indent=4)
+
+    # generate png masks
+    
+    width = args.width
+    height = args.width
+    mask = []
+    for i in range(height):
+        row = []
+        for j in range(width):
+            row.extend([0, 0, 0, 0])
+        mask.append(row)
+    for i in range(args.grid_side * args.grid_side):
+        for column in range((i % args.grid_side) * width // args.grid_side, ((i % args.grid_side) + 1) * width // args.grid_side):
+            for row in range(i // args.grid_side * width // args.grid_side, (i // args.grid_side + 1) * width // args.grid_side):
+                mask[row][column*4 + 3] = 255
+        png.from_array(mask, "RGBA").save(f"./img/masks/mask_{i}.png")
 
 if __name__ == "__main__":
     args = parse_args()
