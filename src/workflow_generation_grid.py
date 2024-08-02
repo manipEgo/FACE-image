@@ -134,6 +134,8 @@ def main(args: argparse.Namespace):
 
     for i in range(args.grid_side):
         for j in range(args.grid_side):
+            if i == args.grid_side - 1 and j == args.grid_side - 1:
+                break
             # Filename String Function: 5 + i * grid_side * 2 + j * 2
             nodes.append(
                 {
@@ -212,6 +214,8 @@ def main(args: argparse.Namespace):
     link_cnt += 1
     for i in range(args.grid_side):
         for j in range(args.grid_side):
+            if i == args.grid_side - 1 and j == args.grid_side - 1:
+                break
             ## String Function -> Masked In-paint
             nodes[5 + i * args.grid_side * 2 + j * 2]["outputs"][0]["links"].append(link_cnt)
             nodes[6 + i * args.grid_side * 2 + j * 2]["inputs"][6].update({"link": link_cnt})
