@@ -149,7 +149,7 @@ def main(args: argparse.Namespace):
                         {"name": "STRING", "type": "STRING", "links": [], "slot_index": 0}
                     ],
                     "widgets_values": [
-                        "append", "yes", "", f"_mask-{i*args.grid_side+j}", ""
+                        "append", "no", "", f"_mask-{i*args.grid_side+j}", ""
                     ]
                 }
             )
