@@ -182,7 +182,7 @@ def main(args: argparse.Namespace):
                         "euler",
                         "normal",
                         1,
-                        f"mask-{i*args.grid_side+j}",
+                        "",
                     ],
                 }
             )
@@ -261,6 +261,14 @@ def main(args: argparse.Namespace):
     workflow.update({"last_link_id": link_cnt})
     workflow.update({"nodes": nodes})
     workflow.update({"links": links})
+    GROUP_NODES["MaskInpaint"]["nodes"][4]["inputs"].append({
+        "name": "filename_prefix",
+        "type": "STRING",
+        "link": None,
+        "widget": {
+            "name": "filename_prefix"
+        }
+    })
     workflow.update({"extra": {"groupNodes": GROUP_NODES}})
     json.dump(workflow, open("workflow.json", "w"), indent=4)
 
